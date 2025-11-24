@@ -17,6 +17,8 @@ Aplikacja webowa do zarządzania rejestrem klientów, zbudowana z użyciem Flask
 - 🌓 Tryb ciemny - automatyczne dostosowanie do ustawień systemowych
 - 🔍 Wyszukiwanie i filtrowanie po nazwisku, statusie i miejscowości
 - 📞 Szybkie dzwonienie - kliknij numer telefonu
+- 🗺️ Nawigacja GPS - przycisk nawigacji do adresu klienta
+- 📲 Instalacja jako aplikacja - możliwość zainstalowania na telefonie (PWA)
 
 ## Struktura danych klienta
 
@@ -58,7 +60,18 @@ python app.py
 
 ### 3. Otwórz przeglądarkę
 
-Przejdź do adresu: http://localhost:5000
+Przejdź do adresu: http://localhost:6000
+
+### 4. Zainstaluj jako aplikację (opcjonalnie)
+
+**Na telefonie:**
+1. Otwórz aplikację w przeglądarce Chrome/Safari
+2. Kliknij menu (⋮) i wybierz "Dodaj do ekranu głównego" lub "Zainstaluj aplikację"
+3. Aplikacja pojawi się na ekranie głównym jak normalna aplikacja
+
+**Na komputerze:**
+1. W Chrome kliknij ikonę instalacji w pasku adresu (⊕)
+2. Lub menu (⋮) → "Zainstaluj aplikację"
 
 ## Technologie
 
