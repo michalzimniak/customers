@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rejestr Klientów</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+            --text-secondary: #6c757d;
+            --border-color: #dee2e6;
+            --shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-card: #2d2d2d;
+                --text-primary: #e9ecef;
+                --text-secondary: #adb5bd;
+                --border-color: #495057;
+                --shadow: 0 0 15px rgba(0,0,0,0.5);
+            }
+            
+            body {
+                color: var(--text-primary) !important;
+            }
+            
+            h1, h2, h3, h4, h5, h6, p, label, strong {
+                color: var(--text-primary) !important;
+            }
+            
+            .table {
+                color: var(--text-primary) !important;
+                --bs-table-bg: transparent;
+                --bs-table-striped-bg: rgba(255, 255, 255, 0.05);
+                --bs-table-hover-bg: rgba(255, 255, 255, 0.075);
+                --bs-table-color: var(--text-primary);
+            }
+            
+            .table thead {
+                background-color: #343a40 !important;
+                color: var(--text-primary) !important;
+                border-color: var(--border-color) !important;
+            }
+            
+            .table thead th {
+                color: var(--text-primary) !important;
+            }
+            
+            .table tbody tr {
+                background-color: var(--bg-card) !important;
+                border-color: var(--border-color) !important;
+                color: var(--text-primary) !important;
+            }
+            
+            .table tbody td {
+                color: var(--text-primary) !important;
+                border-color: var(--border-color) !important;
+            }
+            
+            .table-light {
+                background-color: #343a40 !important;
+                color: var(--text-primary) !important;
+            }
+            
+            .table-row-clickable:hover {
+                background-color: #3a3a3a !important;
+            }
+            
+            .form-control, .form-select {
+                background-color: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+                border-color: var(--border-color) !important;
+            }
+            
+            .form-control::placeholder {
+                color: var(--text-secondary) !important;
+            }
+            
+            .form-control:focus, .form-select:focus {
+                background-color: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+                border-color: #0d6efd !important;
+            }
+            
+            .input-group-text {
+                background-color: #343a40 !important;
+                color: var(--text-primary) !important;
+                border-color: var(--border-color) !important;
+            }
+            
+            .modal-content {
+                background-color: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+            }
+            
+            .modal-header, .modal-footer {
+                border-color: var(--border-color) !important;
+            }
+            
+            .modal-body {
+                color: var(--text-primary) !important;
+            }
+            
+            .btn-close {
+                filter: invert(1);
+            }
+            
+            .text-muted {
+                color: var(--text-secondary) !important;
+            }
+            
+            a:not([href^="tel:"]) {
+                color: #58a6ff !important;
+            }
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            padding: 20px 0;
+            color: var(--text-primary);
+        }
+        
+        .status-badge {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        
+        .status-mozliwa_kolejna_proba {
+            background-color: #ffc107;
+        }
+        
+        .status-nie_rokujacy {
+            background-color: #dc3545;
+        }
+        
+        .status-zadowolony {
+            background-color: #28a745;
+        }
+        
+        .table-row-clickable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .table-row-clickable:hover {
+            background-color: #f1f3f5;
+        }
+        
+        /* Ukryj nagłówek tabeli */
+        .table thead {
+            display: none;
+        }
+        
+        .customer-card {
+            box-shadow: var(--shadow);
+            border-radius: 10px;
+            background: var(--bg-card);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        a[href^="tel:"] {
+            color: #0d6efd;
+            transition: color 0.2s;
+        }
+        
+        a[href^="tel:"]:hover {
+            color: #0a58ca;
+        }
+        
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.4);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.6);
+        }
+        
+        .fab:active {
+            transform: scale(0.95);
+        }
+        
+        .fab i {
+            font-size: 1.8rem;
+        }
+        
+        /* Style dla autouzupełniania adresów */
+        .autocomplete-dropdown {
+            position: absolute;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            width: 100%;
+            box-shadow: var(--shadow);
+        }
+        
+        .autocomplete-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .autocomplete-item:hover {
+            background-color: #e9ecef;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .autocomplete-item:hover {
+                background-color: #3a3a3a;
+            }
+        }
+        
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+        
+        .form-group-autocomplete {
+            position: relative;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+                padding-bottom: 100px;
+            }
+            
+            .customer-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+            
+            .table thead th {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.8rem;
+            }
+            
+            /* Ukryj nagłówki tabeli na mobile */
+            .table thead {
+                display: none;
+            }
+            
+            .table tbody td {
+                padding: 0.5rem 0.25rem;
+            }
+            
+            .btn {
+                padding: 0.375rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .btn-sm {
+                padding: 0.25rem 0.4rem;
+                font-size: 0.75rem;
+            }
+            
+            .status-badge {
+                width: 16px;
+                height: 16px;
+            }
+            
+            /* Ukryj kolumnę telefon na małych ekranach */
+            .hide-mobile {
+                display: none;
+            }
+            
+            /* Ukryj kolumnę akcji na mobile */
+            .actions-column {
+                display: none;
+            }
+            
+            /* Pokaż ikonę telefonu na mobile */
+            .phone-icon-mobile {
+                display: table-cell !important;
+            }
+            
+            .phone-icon-mobile a {
+                font-size: 1.2rem;
+                color: #0d6efd;
+            }
+            
+            /* Filtry w pełnej szerokości na mobile */
+            .col-md-4 {
+                margin-bottom: 0.5rem;
+            }
+            
+            .input-group-text {
+                padding: 0.375rem 0.5rem;
+            }
+            
+            .form-control, .form-select {
+                font-size: 0.9rem;
+            }
+            
+            /* Ukryj standardowy przycisk dodaj na mobile */
+            .desktop-add-btn {
+                display: none;
+            }
+            
+            /* Pokaż FAB na mobile */
+            .fab {
+                display: flex;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .desktop-add-btn {
+                display: inline-block;
+            }
+            
+            .phone-icon-mobile {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .d-flex.justify-content-between .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="customer-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="mb-0">
+                    <i class="bi bi-people-fill"></i> Rejestr Klientów
+                </h1>
+                <button class="btn btn-primary desktop-add-btn" onclick="openAddModal()">
+                    <i class="bi bi-plus-circle"></i> Dodaj klienta
+                </button>
+            </div>
+            
+            <!-- Filtry i wyszukiwanie -->
+            <div class="row mb-3">
+                <div class="col-md-4 mb-2">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Szukaj po nazwisku..." 
+                               onkeyup="filterCustomers()">
+                    </div>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <select class="form-select" id="statusFilter" onchange="filterCustomers()">
+                        <option value="">Wszystkie statusy</option>
+                        <option value="mozliwa_kolejna_proba">🟡 Możliwa kolejna próba</option>
+                        <option value="nie_rokujacy">🔴 Nie rokujący</option>
+                        <option value="zadowolony">🟢 Zadowolony</option>
+                    </select>
+                </div>
+                <div class="col-md-4 mb-2">
+                    <input list="miejscowosciList" class="form-control" id="miejscowoscFilter" 
+                           placeholder="Wszystkie miejscowości" 
+                           oninput="filterCustomers()">
+                    <datalist id="miejscowosciList">
+                    </datalist>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Status</th>
+                            <th>Imię</th>
+                            <th>Nazwisko</th>
+                            <th>Miejscowość</th>
+                            <th class="hide-mobile">Telefon</th>
+                            <th class="phone-icon-mobile" style="display: none;"><i class="bi bi-telephone"></i></th>
+                            <th class="text-center actions-column">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customersTableBody">
+                        <!-- Dane będą załadowane dynamicznie -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="noCustomers" class="text-center text-muted py-5" style="display: none;">
+                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
+                <p class="mt-3">Brak klientów w rejestrze. Dodaj pierwszego klienta!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button (FAB) dla mobile -->
+    <button class="fab" onclick="openAddModal()" title="Dodaj klienta">
+        <i class="bi bi-plus-lg"></i>
+    </button>
+
+    <!-- Modal dodawania/edycji klienta -->
+    <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="customerModalLabel">Dodaj klienta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="customerForm">
+                        <input type="hidden" id="customerId">
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="imie" class="form-label">Imię *</label>
+                                <input type="text" class="form-control" id="imie" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="nazwisko" class="form-label">Nazwisko *</label>
+                                <input type="text" class="form-control" id="nazwisko" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3 form-group-autocomplete">
+                            <label for="miejscowosc" class="form-label">Miejscowość *</label>
+                            <input type="text" class="form-control" id="miejscowosc" required 
+                                   autocomplete="off"
+                                   oninput="searchCities(this.value)"
+                                   onfocus="searchCities(this.value)">
+                            <div id="citiesDropdown" class="autocomplete-dropdown" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="mb-3 form-group-autocomplete">
+                            <label for="ulica_nr" class="form-label">Ulica i nr domu/mieszkania</label>
+                            <input type="text" class="form-control" id="ulica_nr"
+                                   autocomplete="off"
+                                   oninput="searchStreets(this.value)"
+                                   onfocus="searchStreets(this.value)">
+                            <div id="streetsDropdown" class="autocomplete-dropdown" style="display: none;"></div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="telefon" class="form-label">Telefon</label>
+                            <input type="tel" class="form-control" id="telefon" placeholder="np. 123-456-789">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status *</label>
+                            <select class="form-select" id="status" required>
+                                <option value="mozliwa_kolejna_proba">
+                                    <span class="status-badge status-mozliwa_kolejna_proba"></span>
+                                    Możliwa kolejna próba
+                                </option>
+                                <option value="nie_rokujacy">Nie rokujący</option>
+                                <option value="zadowolony">Zadowolony</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="notatka" class="form-label">Notatka</label>
+                            <textarea class="form-control" id="notatka" rows="4"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Anuluj</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCustomer()">Zapisz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal szczegółów klienta -->
+    <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detailsModalLabel">Szczegóły klienta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Imię:</strong>
+                            <p id="detail-imie" class="mb-0"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Nazwisko:</strong>
+                            <p id="detail-nazwisko" class="mb-0"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Miejscowość:</strong>
+                            <p id="detail-miejscowosc" class="mb-0"></p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Ulica i nr:</strong>
+                            <p id="detail-ulica_nr" class="mb-0"></p>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Telefon:</strong>
+                        <p id="detail-telefon" class="mb-0"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Status:</strong>
+                        <p id="detail-status" class="mb-0"></p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Notatka:</strong>
+                        <p id="detail-notatka" class="mb-0 text-muted"></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Zamknij</button>
+                    <button type="button" class="btn btn-success" onclick="openNavigation()">
+                        <i class="bi bi-geo-alt-fill"></i> Nawiguj
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="editFromDetails()">
+                        <i class="bi bi-pencil"></i> Edytuj
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="deleteCustomerConfirm()">
+                        <i class="bi bi-trash"></i> Usuń
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        let customers = [];
+        let filteredCustomers = [];
+        let currentCustomerId = null;
+        let customerModal;
+        let detailsModal;
+
+        // Inicjalizacja modali
+        document.addEventListener('DOMContentLoaded', function() {
+            customerModal = new bootstrap.Modal(document.getElementById('customerModal'));
+            detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            loadCustomers();
+        });
+
+        // Załaduj listę klientów
+        async function loadCustomers() {
+            try {
+                const response = await fetch('/api/customers');
+                customers = await response.json();
+                filteredCustomers = [...customers];
+                updateMiejscowoscFilter();
+                filterCustomers();
+            } catch (error) {
+                console.error('Błąd ładowania klientów:', error);
+                alert('Błąd podczas ładowania klientów');
+            }
+        }
+
+        // Aktualizuj filtr miejscowości
+        function updateMiejscowoscFilter() {
+            const miejscowosci = [...new Set(customers.map(c => c.miejscowosc))].sort();
+            const datalist = document.getElementById('miejscowosciList');
+            const currentValue = document.getElementById('miejscowoscFilter').value;
+            
+            datalist.innerHTML = miejscowosci.map(m => `<option value="${m}">`).join('');
+            
+            // Zachowaj obecną wartość nawet jeśli nie ma jej na liście
+            if (currentValue) {
+                document.getElementById('miejscowoscFilter').value = currentValue;
+            }
+        }
+
+        // Filtruj klientów
+        function filterCustomers() {
+            const searchText = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const miejscowoscFilter = document.getElementById('miejscowoscFilter').value.toLowerCase();
+            
+            filteredCustomers = customers.filter(customer => {
+                const matchesSearch = customer.nazwisko.toLowerCase().includes(searchText) ||
+                                     customer.imie.toLowerCase().includes(searchText);
+                const matchesStatus = !statusFilter || customer.status === statusFilter;
+                const matchesMiejscowosc = !miejscowoscFilter || customer.miejscowosc.toLowerCase().includes(miejscowoscFilter);
+                
+                return matchesSearch && matchesStatus && matchesMiejscowosc;
+            });
+            
+            renderCustomersTable();
+        }
+
+        // Renderuj tabelę klientów
+        function renderCustomersTable() {
+            const tbody = document.getElementById('customersTableBody');
+            const noCustomers = document.getElementById('noCustomers');
+            
+            if (filteredCustomers.length === 0) {
+                tbody.innerHTML = '';
+                noCustomers.style.display = 'block';
+                if (customers.length > 0) {
+                    noCustomers.querySelector('p').textContent = 'Brak klientów spełniających kryteria wyszukiwania.';
+                } else {
+                    noCustomers.querySelector('p').textContent = 'Brak klientów w rejestrze. Dodaj pierwszego klienta!';
+                }
+                return;
+            }
+            
+            noCustomers.style.display = 'none';
+            
+            tbody.innerHTML = filteredCustomers.map(customer => `
+                <tr class="table-row-clickable" onclick="showDetails(${customer.id})">
+                    <td>
+                        <span class="status-badge status-${customer.status}" 
+                              title="${getStatusLabel(customer.status)}"></span>
+                    </td>
+                    <td>${customer.imie}</td>
+                    <td>${customer.nazwisko}</td>
+                    <td>${customer.miejscowosc}</td>
+                    <td class="hide-mobile" onclick="event.stopPropagation()">
+                        ${customer.telefon ? `<a href="tel:${customer.telefon}" class="text-decoration-none" title="Zadzwoń"><i class="bi bi-telephone-fill"></i> ${customer.telefon}</a>` : '-'}
+                    </td>
+                    <td class="phone-icon-mobile text-center" style="display: none;" onclick="event.stopPropagation()">
+                        ${customer.telefon ? `<a href="tel:${customer.telefon}" title="Zadzwoń"><i class="bi bi-telephone-fill"></i></a>` : '-'}
+                    </td>
+                    <td class="text-center actions-column">
+                        <button class="btn btn-sm btn-outline-primary" 
+                                onclick="event.stopPropagation(); editCustomer(${customer.id})"
+                                title="Edytuj">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" 
+                                onclick="event.stopPropagation(); deleteCustomer(${customer.id})"
+                                title="Usuń">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Pobierz etykietę statusu
+        function getStatusLabel(status) {
+            const labels = {
+                'mozliwa_kolejna_proba': 'Możliwa kolejna próba',
+                'nie_rokujacy': 'Nie rokujący',
+                'zadowolony': 'Zadowolony'
+            };
+            return labels[status] || status;
+        }
+
+        // Pokaż szczegóły klienta
+        function showDetails(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) return;
+            
+            currentCustomerId = customerId;
+            
+            document.getElementById('detail-imie').textContent = customer.imie;
+            document.getElementById('detail-nazwisko').textContent = customer.nazwisko;
+            document.getElementById('detail-miejscowosc').textContent = customer.miejscowosc;
+            document.getElementById('detail-ulica_nr').textContent = customer.ulica_nr || '-';
+            
+            const telefonElement = document.getElementById('detail-telefon');
+            if (customer.telefon) {
+                telefonElement.innerHTML = `<a href="tel:${customer.telefon}" class="text-decoration-none"><i class="bi bi-telephone-fill"></i> ${customer.telefon}</a>`;
+            } else {
+                telefonElement.textContent = '-';
+            }
+            
+            document.getElementById('detail-notatka').textContent = customer.notatka || 'Brak notatki';
+            
+            const statusHtml = `
+                <span class="status-badge status-${customer.status}"></span>
+                ${getStatusLabel(customer.status)}
+            `;
+            document.getElementById('detail-status').innerHTML = statusHtml;
+            
+            detailsModal.show();
+        }
+
+        // Otwórz modal dodawania
+        function openAddModal() {
+            document.getElementById('customerModalLabel').textContent = 'Dodaj klienta';
+            document.getElementById('customerForm').reset();
+            document.getElementById('customerId').value = '';
+            customerModal.show();
+        }
+
+        // Edytuj klienta
+        async function editCustomer(customerId) {
+            const customer = customers.find(c => c.id === customerId);
+            if (!customer) return;
+            
+            document.getElementById('customerModalLabel').textContent = 'Edytuj klienta';
+            document.getElementById('customerId').value = customer.id;
+            document.getElementById('imie').value = customer.imie;
+            document.getElementById('nazwisko').value = customer.nazwisko;
+            document.getElementById('miejscowosc').value = customer.miejscowosc;
+            document.getElementById('ulica_nr').value = customer.ulica_nr || '';
+            document.getElementById('telefon').value = customer.telefon || '';
+            document.getElementById('status').value = customer.status;
+            document.getElementById('notatka').value = customer.notatka || '';
+            
+            customerModal.show();
+        }
+
+        // Edytuj z okna szczegółów
+        function editFromDetails() {
+            detailsModal.hide();
+            setTimeout(() => editCustomer(currentCustomerId), 300);
+        }
+
+        // Zapisz klienta
+        async function saveCustomer() {
+            const form = document.getElementById('customerForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            
+            const customerId = document.getElementById('customerId').value;
+            const customerData = {
+                imie: document.getElementById('imie').value,
+                nazwisko: document.getElementById('nazwisko').value,
+                miejscowosc: document.getElementById('miejscowosc').value,
+                ulica_nr: document.getElementById('ulica_nr').value,
+                telefon: document.getElementById('telefon').value,
+                status: document.getElementById('status').value,
+                notatka: document.getElementById('notatka').value
+            };
+            
+            try {
+                let response;
+                if (customerId) {
+                    // Aktualizacja
+                    response = await fetch(`/api/customers/${customerId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(customerData)
+                    });
+                } else {
+                    // Dodanie nowego
+                    response = await fetch('/api/customers', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(customerData)
+                    });
+                }
+                
+                if (response.ok) {
+                    customerModal.hide();
+                    loadCustomers();
+                } else {
+                    alert('Błąd podczas zapisywania klienta');
+                }
+            } catch (error) {
+                console.error('Błąd:', error);
+                alert('Błąd podczas zapisywania klienta');
+            }
+        }
+
+        // Usuń klienta
+        async function deleteCustomer(customerId) {
+            if (!confirm('Czy na pewno chcesz usunąć tego klienta?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/customers/${customerId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    loadCustomers();
+                } else {
+                    alert('Błąd podczas usuwania klienta');
+                }
+            } catch (error) {
+                console.error('Błąd:', error);
+                alert('Błąd podczas usuwania klienta');
+            }
+        }
+
+        // Usuń z okna szczegółów
+        function deleteCustomerConfirm() {
+            detailsModal.hide();
+            setTimeout(() => deleteCustomer(currentCustomerId), 300);
+        }
+        
+        // Otwórz nawigację do adresu klienta
+        function openNavigation() {
+            const customer = customers.find(c => c.id === currentCustomerId);
+            if (!customer) return;
+            
+            // Stwórz adres do nawigacji
+            let address = '';
+            if (customer.ulica_nr) {
+                address = `${customer.ulica_nr}, ${customer.miejscowosc}, Poland`;
+            } else {
+                address = `${customer.miejscowosc}, Poland`;
+            }
+            
+            // Zakoduj adres dla URL
+            const encodedAddress = encodeURIComponent(address);
+            
+            // Spróbuj otworzyć w Google Maps (działa na większości urządzeń)
+            const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            
+            // Otwórz w nowej karcie
+            window.open(mapsUrl, '_blank');
+        }
+        
+        // Wyczyść filtry
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('miejscowoscFilter').value = '';
+            filterCustomers();
+        }
+        
+        // Geoportal API - wyszukiwanie miejscowości
+        let citySearchTimeout;
+        async function searchCities(query) {
+            clearTimeout(citySearchTimeout);
+            
+            const dropdown = document.getElementById('citiesDropdown');
+            
+            if (!query || query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            citySearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/geocode/cities?q=${encodeURIComponent(query)}`);
+                    const cities = await response.json();
+                    
+                    if (cities.length > 0) {
+                        dropdown.innerHTML = cities.map(city => 
+                            `<div class="autocomplete-item" onclick="selectCity('${city.name.replace(/'/g, "\\'")}')">
+                                ${city.display}
+                            </div>`
+                        ).join('');
+                        dropdown.style.display = 'block';
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Błąd wyszukiwania miejscowości:', error);
+                    dropdown.style.display = 'none';
+                }
+            }, 300);
+        }
+        
+        function selectCity(cityName) {
+            document.getElementById('miejscowosc').value = cityName;
+            document.getElementById('citiesDropdown').style.display = 'none';
+            // Wyczyść pole ulicy gdy zmienia się miejscowość
+            document.getElementById('ulica_nr').value = '';
+        }
+        
+        // Geoportal API - wyszukiwanie ulic
+        let streetSearchTimeout;
+        async function searchStreets(query) {
+            clearTimeout(streetSearchTimeout);
+            
+            const dropdown = document.getElementById('streetsDropdown');
+            const city = document.getElementById('miejscowosc').value;
+            
+            if (!city || !query || query.length < 2) {
+                dropdown.style.display = 'none';
+                return;
+            }
+            
+            streetSearchTimeout = setTimeout(async () => {
+                try {
+                    const response = await fetch(`/api/geocode/streets?city=${encodeURIComponent(city)}&q=${encodeURIComponent(query)}`);
+                    const streets = await response.json();
+                    
+                    if (streets.length > 0) {
+                        dropdown.innerHTML = streets.map(street => 
+                            `<div class="autocomplete-item" onclick="selectStreet('${street.name.replace(/'/g, "\\'")}')">
+                                ${street.display}
+                            </div>`
+                        ).join('');
+                        dropdown.style.display = 'block';
+                    } else {
+                        dropdown.style.display = 'none';
+                    }
+                } catch (error) {
+                    console.error('Błąd wyszukiwania ulic:', error);
+                    dropdown.style.display = 'none';
+                }
+            }, 300);
+        }
+        
+        function selectStreet(streetName) {
+            document.getElementById('ulica_nr').value = streetName;
+            document.getElementById('streetsDropdown').style.display = 'none';
+        }
+        
+        // Ukryj dropdowny gdy kliknie się poza nimi
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.form-group-autocomplete')) {
+                document.getElementById('citiesDropdown').style.display = 'none';
+                document.getElementById('streetsDropdown').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
