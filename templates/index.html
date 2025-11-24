@@ -373,9 +373,66 @@
                 width: 100%;
             }
         }
+        
+        /* Banner instalacji PWA */
+        #installBanner {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(13, 110, 253, 0.4);
+            z-index: 1001;
+            display: none;
+            max-width: 90%;
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from {
+                bottom: -100px;
+                opacity: 0;
+            }
+            to {
+                bottom: 80px;
+                opacity: 1;
+            }
+        }
+        
+        #installBanner .close-banner {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 15px;
+            opacity: 0.8;
+        }
+        
+        #installBanner .close-banner:hover {
+            opacity: 1;
+        }
     </style>
 </head>
 <body>
+    <!-- Banner instalacji PWA -->
+    <div id="installBanner">
+        <div class="d-flex align-items-center">
+            <div>
+                <strong><i class="bi bi-download"></i> Zainstaluj aplikację</strong>
+                <p class="mb-0 small">Dodaj do ekranu głównego dla szybszego dostępu</p>
+            </div>
+            <button class="close-banner" onclick="closeInstallBanner()">&times;</button>
+        </div>
+        <button id="installButton" class="btn btn-light btn-sm mt-2 w-100">
+            <i class="bi bi-plus-circle"></i> Zainstaluj teraz
+        </button>
+    </div>
+
     <div class="container">
         <div class="customer-card">
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -609,14 +666,44 @@
             window.addEventListener('beforeinstallprompt', (e) => {
                 e.preventDefault();
                 deferredPrompt = e;
-                showInstallPrompt(deferredPrompt);
+                showInstallBanner(deferredPrompt);
             });
+            
+            // Sprawdź czy już zainstalowano
+            if (window.matchMedia('(display-mode: standalone)').matches) {
+                console.log('Aplikacja już zainstalowana');
+            } else {
+                // Pokaż banner po 3 sekundach jeśli nie ma natywnego promptu
+                setTimeout(() => {
+                    if (!deferredPrompt && !localStorage.getItem('installBannerClosed')) {
+                        document.getElementById('installBanner').style.display = 'block';
+                    }
+                }, 3000);
+            }
         });
         
-        // Pokaż komunikat o możliwości instalacji
-        function showInstallPrompt(deferredPrompt) {
-            // Możesz dodać tutaj niestandardowy banner instalacji
-            // Na razie przeglądarka pokaże domyślny prompt
+        // Pokaż banner instalacji
+        function showInstallBanner(deferredPrompt) {
+            const banner = document.getElementById('installBanner');
+            const installButton = document.getElementById('installButton');
+            
+            if (!localStorage.getItem('installBannerClosed')) {
+                banner.style.display = 'block';
+            }
+            
+            installButton.addEventListener('click', async () => {
+                banner.style.display = 'none';
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`Użytkownik ${outcome === 'accepted' ? 'zaakceptował' : 'odrzucił'} instalację`);
+                deferredPrompt = null;
+            });
+        }
+        
+        // Zamknij banner instalacji
+        function closeInstallBanner() {
+            document.getElementById('installBanner').style.display = 'none';
+            localStorage.setItem('installBannerClosed', 'true');
         }
 
         // Załaduj listę klientów
