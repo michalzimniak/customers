@@ -421,14 +421,6 @@
         #deleteModal {
             z-index: 1060 !important;
         }
-        
-        #deleteModal ~ .modal-backdrop {
-            z-index: 1055 !important;
-        }
-        
-        .modal-backdrop.show:nth-of-type(2) {
-            z-index: 1055 !important;
-        }
     </style>
 </head>
 <body>
@@ -768,6 +760,26 @@
             
             // Event listener dla przycisku potwierdzenia usunięcia
             document.getElementById('confirmDeleteBtn').addEventListener('click', deleteCustomer);
+            
+            // Event listener dla pokazywania modala usunięcia - ustaw z-index backdrop
+            document.getElementById('deleteModal').addEventListener('shown.bs.modal', function() {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 0) {
+                    const lastBackdrop = backdrops[backdrops.length - 1];
+                    lastBackdrop.style.zIndex = '1055';
+                }
+            });
+            
+            // Event listener dla ukrywania modala usunięcia - wyczyść backdrop
+            document.getElementById('deleteModal').addEventListener('hidden.bs.modal', function() {
+                // Usuń wszystkie niepotrzebne backdropy
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    for (let i = 1; i < backdrops.length; i++) {
+                        backdrops[i].remove();
+                    }
+                }
+            });
             
             // Sprawdź status autentykacji
             checkAuthStatus();
@@ -1180,14 +1192,6 @@
             customerToDelete = customerId;
             document.getElementById('deleteCustomerName').textContent = customerName;
             deleteModal.show();
-            
-            // Ustaw z-index dla backdrop modala usunięcia
-            setTimeout(() => {
-                const backdrops = document.querySelectorAll('.modal-backdrop');
-                if (backdrops.length > 1) {
-                    backdrops[backdrops.length - 1].style.zIndex = '1055';
-                }
-            }, 10);
         }
 
         // Usuń klienta po potwierdzeniu
