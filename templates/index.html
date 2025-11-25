@@ -232,9 +232,10 @@
             border-radius: 0 0 4px 4px;
             max-height: 200px;
             overflow-y: auto;
-            z-index: 1000;
-            width: 100%;
-            box-shadow: var(--shadow);
+            z-index: 1050;
+            width: calc(100% - 2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: -1px;
         }
         
         .autocomplete-item {
@@ -248,6 +249,16 @@
         }
         
         @media (prefers-color-scheme: dark) {
+            .autocomplete-dropdown {
+                background: var(--bg-card);
+                border-color: #495057;
+            }
+            
+            .autocomplete-item {
+                color: var(--text-primary);
+                border-bottom-color: #495057;
+            }
+            
             .autocomplete-item:hover {
                 background-color: #3a3a3a;
             }
@@ -1339,22 +1350,33 @@
             
             citySearchTimeout = setTimeout(async () => {
                 try {
+                    dropdown.innerHTML = '<div class="autocomplete-item">Wyszukiwanie...</div>';
+                    dropdown.style.display = 'block';
+                    
                     const response = await fetch(`/api/geocode/cities?q=${encodeURIComponent(query)}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    
                     const cities = await response.json();
+                    console.log('Znalezione miasta:', cities);
                     
                     if (cities.length > 0) {
                         dropdown.innerHTML = cities.map(city => 
-                            `<div class="autocomplete-item" onclick="selectCity('${city.name.replace(/'/g, "\\'")}')">
+                            `<div class="autocomplete-item" onclick="selectCity(\`${city.name.replace(/`/g, '\\`')}\`)">
                                 ${city.display}
                             </div>`
                         ).join('');
                         dropdown.style.display = 'block';
                     } else {
-                        dropdown.style.display = 'none';
+                        dropdown.innerHTML = '<div class="autocomplete-item" style="color: #999;">Brak wyników</div>';
+                        dropdown.style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Błąd wyszukiwania miejscowości:', error);
-                    dropdown.style.display = 'none';
+                    dropdown.innerHTML = '<div class="autocomplete-item" style="color: #dc3545;">Błąd wyszukiwania</div>';
+                    dropdown.style.display = 'block';
                 }
             }, 300);
         }
@@ -1379,24 +1401,32 @@
                 return;
             }
             
+            dropdown.innerHTML = '<div class="autocomplete-item">Wyszukiwanie...</div>';
+            dropdown.style.display = 'block';
+            
             streetSearchTimeout = setTimeout(async () => {
                 try {
                     const response = await fetch(`/api/geocode/streets?city=${encodeURIComponent(city)}&q=${encodeURIComponent(query)}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const streets = await response.json();
+                    
+                    console.log('Znalezione ulice:', streets);
                     
                     if (streets.length > 0) {
                         dropdown.innerHTML = streets.map(street => 
-                            `<div class="autocomplete-item" onclick="selectStreet('${street.name.replace(/'/g, "\\'")}')">
+                            `<div class="autocomplete-item" onclick="selectStreet(\`${street.name.replace(/`/g, '\\`')}\`)">
                                 ${street.display}
                             </div>`
                         ).join('');
                         dropdown.style.display = 'block';
                     } else {
-                        dropdown.style.display = 'none';
+                        dropdown.innerHTML = '<div class="autocomplete-item" style="color: #6c757d;">Brak wyników</div>';
+                        dropdown.style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Błąd wyszukiwania ulic:', error);
-                    dropdown.style.display = 'none';
+                    dropdown.innerHTML = '<div class="autocomplete-item" style="color: #dc3545;">Błąd wyszukiwania</div>';
+                    dropdown.style.display = 'block';
                 }
             }, 300);
         }
