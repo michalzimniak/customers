@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0d6efd">
+    <title>Logowanie - Rejestr Klientów</title>
+    
+    <link rel="manifest" href="/static/manifest.json">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-primary: #f8f9fa;
+            --bg-card: #ffffff;
+            --text-primary: #212529;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-primary: #1a1a1a;
+                --bg-card: #2d2d2d;
+                --text-primary: #e9ecef;
+            }
+            
+            body, h1, h2, p, label {
+                color: var(--text-primary) !important;
+            }
+            
+            .card {
+                background-color: var(--bg-card) !important;
+                border-color: #495057 !important;
+            }
+            
+            .form-control {
+                background-color: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+                border-color: #495057 !important;
+            }
+            
+            .form-control:focus {
+                background-color: var(--bg-card) !important;
+                color: var(--text-primary) !important;
+            }
+        }
+        
+        body {
+            background-color: var(--bg-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+        }
+        
+        .biometric-icon {
+            font-size: 4rem;
+            color: #0d6efd;
+            margin: 20px 0;
+        }
+        
+        .tab-content {
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="card shadow-lg">
+            <div class="card-body p-4">
+                <div class="text-center">
+                    <i class="bi bi-people-fill" style="font-size: 3rem; color: #0d6efd;"></i>
+                    <h2 class="mt-3">Rejestr Klientów</h2>
+                    <p class="text-muted">Zaloguj się aby kontynuować</p>
+                </div>
+                
+                <!-- Tabs -->
+                <ul class="nav nav-tabs mt-4" id="authTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="bio-login-tab" data-bs-toggle="tab" 
+                                data-bs-target="#bio-login" type="button">Logowanie</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="register-tab" data-bs-toggle="tab" 
+                                data-bs-target="#register" type="button">Rejestracja</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content">
+                    <!-- Logowanie biometrią (domyślne) -->
+                    <div class="tab-pane fade show active" id="bio-login" role="tabpanel">
+                        <!-- WebAuthn wspierane -->
+                        <div id="webauthn-supported">
+                            <div class="text-center">
+                                <i class="bi bi-fingerprint biometric-icon"></i>
+                                <p>Użyj odcisku palca lub Face ID</p>
+                                <button class="btn btn-primary btn-lg w-100" onclick="loginWithBiometric()">
+                                    <i class="bi bi-shield-lock"></i> Zaloguj się biometrycznie
+                                </button>
+                            </div>
+                            <div class="text-center mt-3">
+                                <button class="btn btn-link" onclick="showPasswordLogin()">
+                                    <i class="bi bi-key"></i> Użyj hasła zamiast
+                                </button>
+                            </div>
+                            <div id="bioLoginError" class="alert alert-danger mt-3" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- WebAuthn nie wspierane - pokaż logowanie hasłem -->
+                        <div id="webauthn-not-supported" style="display: none;">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle"></i> 
+                                Twoja przeglądarka nie wspiera biometrii. Użyj hasła do logowania.
+                            </div>
+                            <form id="passwordLoginForm">
+                                <div class="mb-3">
+                                    <label for="loginUsername" class="form-label">Nazwa użytkownika</label>
+                                    <input type="text" class="form-control" id="loginUsername" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginPassword" class="form-label">Hasło</label>
+                                    <input type="password" class="form-control" id="loginPassword" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="bi bi-box-arrow-in-right"></i> Zaloguj się
+                                </button>
+                            </form>
+                            <div id="passwordLoginError" class="alert alert-danger mt-3" style="display: none;"></div>
+                        </div>
+                        
+                        <!-- Formularz hasła (ukryty, pokazywany na żądanie) -->
+                        <div id="password-login-fallback" style="display: none;">
+                            <form id="passwordLoginForm2">
+                                <div class="mb-3">
+                                    <label for="loginUsername2" class="form-label">Nazwa użytkownika</label>
+                                    <input type="text" class="form-control" id="loginUsername2" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="loginPassword2" class="form-label">Hasło</label>
+                                    <input type="password" class="form-control" id="loginPassword2" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-lg w-100">
+                                    <i class="bi bi-box-arrow-in-right"></i> Zaloguj się
+                                </button>
+                                <div class="text-center mt-2">
+                                    <button type="button" class="btn btn-link" onclick="showBiometricLogin()">
+                                        <i class="bi bi-fingerprint"></i> Wróć do biometrii
+                                    </button>
+                                </div>
+                            </form>
+                            <div id="passwordLoginError2" class="alert alert-danger mt-3" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Rejestracja -->
+                    <div class="tab-pane fade" id="register" role="tabpanel">
+                        <form id="registerForm">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Nazwa użytkownika</label>
+                                <input type="text" class="form-control" id="username" required 
+                                       placeholder="Wpisz swoją nazwę">
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Hasło</label>
+                                <input type="password" class="form-control" id="password" required 
+                                       placeholder="Minimum 6 znaków" minlength="6">
+                            </div>
+                            <div class="mb-3">
+                                <label for="passwordConfirm" class="form-label">Potwierdź hasło</label>
+                                <input type="password" class="form-control" id="passwordConfirm" required 
+                                       placeholder="Wpisz hasło ponownie">
+                            </div>
+                            <button type="submit" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-person-plus"></i> Zarejestruj się
+                            </button>
+                        </form>
+                        <div id="registerError" class="alert alert-danger mt-3" style="display: none;"></div>
+                        <div id="registerSuccess" class="alert alert-success mt-3" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check"></i> 
+                        Bezpieczna autentykacja - biometria lub hasło
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sprawdź czy przeglądarka wspiera WebAuthn przy załadowaniu
+        document.addEventListener('DOMContentLoaded', function() {
+            if (!window.PublicKeyCredential) {
+                // Brak wsparcia WebAuthn - pokaż logowanie hasłem
+                document.getElementById('webauthn-not-supported').style.display = 'block';
+                document.getElementById('webauthn-supported').style.display = 'none';
+            }
+        });
+        
+        // Przełącz na logowanie hasłem
+        function showPasswordLogin() {
+            document.getElementById('webauthn-supported').style.display = 'none';
+            document.getElementById('password-login-fallback').style.display = 'block';
+        }
+        
+        // Wróć do logowania biometrycznego
+        function showBiometricLogin() {
+            document.getElementById('password-login-fallback').style.display = 'none';
+            document.getElementById('webauthn-supported').style.display = 'block';
+        }
+        
+        // Logowanie hasłem (gdy WebAuthn nie wspierany)
+        const form1 = document.getElementById('passwordLoginForm');
+        if (form1) {
+            form1.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await loginWithPassword('loginUsername', 'loginPassword', 'passwordLoginError');
+            });
+        }
+        
+        // Logowanie hasłem (fallback z wyboru użytkownika)
+        const form2 = document.getElementById('passwordLoginForm2');
+        if (form2) {
+            form2.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await loginWithPassword('loginUsername2', 'loginPassword2', 'passwordLoginError2');
+            });
+        }
+        
+        // Funkcja logowania hasłem
+        async function loginWithPassword(usernameId, passwordId, errorId) {
+            const username = document.getElementById(usernameId).value;
+            const password = document.getElementById(passwordId).value;
+            const errorDiv = document.getElementById(errorId);
+            
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/auth/login/password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Błąd logowania');
+                }
+                
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('Błąd logowania:', error);
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        }
+        
+        // Rejestracja
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const passwordConfirm = document.getElementById('passwordConfirm').value;
+            const errorDiv = document.getElementById('registerError');
+            const successDiv = document.getElementById('registerSuccess');
+            
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            
+            if (password !== passwordConfirm) {
+                errorDiv.textContent = 'Hasła nie są identyczne';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            if (password.length < 6) {
+                errorDiv.textContent = 'Hasło musi mieć minimum 6 znaków';
+                errorDiv.style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/auth/register/password', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, password})
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Błąd rejestracji');
+                }
+                
+                successDiv.textContent = `Rejestracja zakończona! Witaj, ${data.username}`;
+                successDiv.style.display = 'block';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Błąd rejestracji:', error);
+                errorDiv.textContent = error.message;
+                errorDiv.style.display = 'block';
+            }
+        });
+        
+        // ============ WebAuthn (opcjonalne) ============
+        
+        // Helper: konwersja base64 do ArrayBuffer
+        function base64ToArrayBuffer(base64) {
+            const binaryString = atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        // Helper: konwersja ArrayBuffer do base64
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+        
+        // Logowanie biometrią (WebAuthn) - opcjonalne
+        async function loginWithBiometric() {
+            const errorDiv = document.getElementById('bioLoginError');
+            errorDiv.style.display = 'none';
+            
+            try {
+                // Krok 1: Rozpocznij logowanie
+                const startResponse = await fetch('/auth/login/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                if (!startResponse.ok) {
+                    throw new Error('Błąd rozpoczęcia logowania');
+                }
+                
+                const options = await startResponse.json();
+                
+                // Konwertuj challenge i allowCredentials z base64 do ArrayBuffer
+                options.challenge = base64ToArrayBuffer(options.challenge);
+                options.allowCredentials = options.allowCredentials.map(cred => ({
+                    ...cred,
+                    id: typeof cred.id === 'string' ? base64ToArrayBuffer(cred.id) : cred.id
+                }));
+                
+                // Krok 2: Pobierz assertion
+                const assertion = await navigator.credentials.get({
+                    publicKey: options
+                });
+                
+                // Krok 3: Wyślij assertion do serwera
+                const finishResponse = await fetch('/auth/login/finish', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        id: assertion.id,
+                        rawId: arrayBufferToBase64(assertion.rawId),
+                        type: assertion.type,
+                        response: {
+                            authenticatorData: arrayBufferToBase64(assertion.response.authenticatorData),
+                            clientDataJSON: arrayBufferToBase64(assertion.response.clientDataJSON),
+                            signature: arrayBufferToBase64(assertion.response.signature),
+                            userHandle: assertion.response.userHandle ? 
+                                arrayBufferToBase64(assertion.response.userHandle) : null
+                        }
+                    })
+                });
+                
+                if (!finishResponse.ok) {
+                    throw new Error('Błąd zakończenia logowania');
+                }
+                
+                const result = await finishResponse.json();
+                
+                // Przekieruj do aplikacji
+                window.location.href = '/';
+                
+            } catch (error) {
+                console.error('Błąd logowania:', error);
+                errorDiv.textContent = 'Błąd logowania: ' + error.message + 
+                    '. Jeśli nie masz konta, zarejestruj się w zakładce "Rejestracja" lub użyj hasła.';
+                errorDiv.style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>

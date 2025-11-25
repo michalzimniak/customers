@@ -4,6 +4,7 @@ Aplikacja webowa do zarządzania rejestrem klientów, zbudowana z użyciem Flask
 
 ## Funkcjonalności
 
+- 🔐 **Bezpieczne logowanie** - autentykacja biometryczna (odcisk palca, Face ID)
 - 📋 Przeglądanie listy klientów w tabeli
 - ➕ Dodawanie nowych klientów przez modal
 - ✏️ Edycja istniejących klientów
@@ -62,7 +63,21 @@ python app.py
 
 Przejdź do adresu: http://localhost:6000
 
-### 4. Zainstaluj jako aplikację (opcjonalnie)
+### 4. Pierwsze logowanie
+
+**Rejestracja:**
+1. Kliknij zakładkę "Rejestracja"
+2. Wpisz nazwę użytkownika
+3. Kliknij "Zarejestruj się"
+4. System poprosi o uwierzytelnienie biometryczne (odcisk palca/Face ID)
+5. Zostaniesz automatycznie zalogowany
+
+**Logowanie:**
+1. Kliknij "Zaloguj się"
+2. Użyj odcisku palca lub Face ID
+3. Gotowe!
+
+### 5. Zainstaluj jako aplikację (opcjonalnie)
 
 **Na telefonie:**
 1. Otwórz aplikację w przeglądarce Chrome/Safari
@@ -88,6 +103,21 @@ Przejdź do adresu: http://localhost:6000
 - `POST /api/customers` - Dodaj nowego klienta
 - `PUT /api/customers/<id>` - Aktualizuj klienta
 - `DELETE /api/customers/<id>` - Usuń klienta
+
+## Bezpieczeństwo
+
+Aplikacja wykorzystuje **Web Authentication API (WebAuthn)** - standard W3C do bezpiecznej autentykacji:
+
+- 🔒 **Brak haseł** - używa biometrii lub klucza sprzętowego
+- 🔐 **Kryptografia klucza publicznego** - dane biometryczne nigdy nie opuszczają urządzenia
+- 📱 **Natywne wsparcie** - działa na wszystkich nowoczesnych telefonach i przeglądarkach
+- 🛡️ **Odporność na phishing** - niemożliwy do zhakowania przez tradycyjne metody
+
+**Wspierane metody:**
+- Odcisk palca (Touch ID, czytniki w telefonach Android)
+- Rozpoznawanie twarzy (Face ID)
+- PIN urządzenia (jako fallback)
+- Klucze sprzętowe (YubiKey, itp.)
 
 ## Obsługa aplikacji
 

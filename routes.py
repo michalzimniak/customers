@@ -1,8 +1,18 @@
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from models import db, Customer
 import requests
 
 api_bp = Blueprint('api', __name__, url_prefix='/api')
+
+def login_required(f):
+    """Dekorator wymagający zalogowania"""
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized', 'redirect': '/login'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Lista najpopularniejszych polskich miejscowości
 POLISH_CITIES = [
@@ -23,18 +33,21 @@ POLISH_CITIES = [
 
 # API - Lista wszystkich klientów
 @api_bp.route('/customers', methods=['GET'])
+@login_required
 def get_customers():
     customers = Customer.query.order_by(Customer.nazwisko, Customer.imie).all()
     return jsonify([customer.to_dict() for customer in customers])
 
 # API - Szczegóły klienta
 @api_bp.route('/customers/<int:customer_id>', methods=['GET'])
+@login_required
 def get_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     return jsonify(customer.to_dict())
 
 # API - Dodanie nowego klienta
 @api_bp.route('/customers', methods=['POST'])
+@login_required
 def add_customer():
     data = request.get_json()
     
@@ -55,6 +68,7 @@ def add_customer():
 
 # API - Aktualizacja klienta
 @api_bp.route('/customers/<int:customer_id>', methods=['PUT'])
+@login_required
 def update_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     data = request.get_json()
@@ -73,6 +87,7 @@ def update_customer(customer_id):
 
 # API - Usunięcie klienta
 @api_bp.route('/customers/<int:customer_id>', methods=['DELETE'])
+@login_required
 def delete_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
     db.session.delete(customer)
