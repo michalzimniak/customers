@@ -433,6 +433,18 @@
         </button>
     </div>
 
+    <!-- Kontener na toasty -->
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div id="appToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <i class="bi me-2" id="toastIcon"></i>
+                <strong class="me-auto" id="toastTitle"></strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastBody"></div>
+        </div>
+    </div>
+
     <div class="container">
         <div class="customer-card">
             <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
@@ -655,6 +667,49 @@
         let customerModal;
         let detailsModal;
 
+        // Funkcja do wyświetlania toastów Bootstrap
+        function showToast(title, message, type = 'info') {
+            const toastEl = document.getElementById('appToast');
+            const toastTitle = document.getElementById('toastTitle');
+            const toastBody = document.getElementById('toastBody');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastHeader = toastEl.querySelector('.toast-header');
+            
+            // Ustaw tytuł i treść
+            toastTitle.textContent = title;
+            toastBody.textContent = message;
+            
+            // Usuń poprzednie klasy kolorów
+            toastHeader.classList.remove('bg-success', 'bg-danger', 'bg-warning', 'bg-info', 'text-white');
+            toastIcon.className = 'bi me-2';
+            
+            // Ustaw kolor i ikonę w zależności od typu
+            switch(type) {
+                case 'success':
+                    toastHeader.classList.add('bg-success', 'text-white');
+                    toastIcon.classList.add('bi-check-circle-fill');
+                    break;
+                case 'error':
+                    toastHeader.classList.add('bg-danger', 'text-white');
+                    toastIcon.classList.add('bi-exclamation-triangle-fill');
+                    break;
+                case 'warning':
+                    toastHeader.classList.add('bg-warning', 'text-dark');
+                    toastIcon.classList.add('bi-exclamation-circle-fill');
+                    break;
+                default: // info
+                    toastHeader.classList.add('bg-info', 'text-white');
+                    toastIcon.classList.add('bi-info-circle-fill');
+            }
+            
+            // Pokaż toast
+            const toast = new bootstrap.Toast(toastEl, {
+                autohide: true,
+                delay: 4000
+            });
+            toast.show();
+        }
+
         // Rejestracja Service Workera dla PWA
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
@@ -723,7 +778,7 @@
                 window.location.href = '/login';
             } catch (error) {
                 console.error('Błąd wylogowania:', error);
-                alert('Błąd wylogowania');
+                showToast('Błąd', 'Nie udało się wylogować', 'error');
             }
         }
         
@@ -731,7 +786,7 @@
         async function addBiometricKey() {
             // Sprawdź wsparcie WebAuthn
             if (!window.PublicKeyCredential) {
-                alert('Twoja przeglądarka nie wspiera kluczy bezpieczeństwa');
+                showToast('Brak wsparcia', 'Twoja przeglądarka nie wspiera kluczy bezpieczeństwa', 'warning');
                 return;
             }
             
@@ -779,14 +834,14 @@
                     throw new Error('Nie udało się dodać klucza');
                 }
                 
-                alert('✅ Klucz biometryczny dodany pomyślnie!\n\nTeraz możesz logować się za pomocą odcisku palca lub Face ID.');
+                showToast('Sukces!', 'Klucz biometryczny dodany pomyślnie! Teraz możesz logować się za pomocą odcisku palca lub Face ID.', 'success');
                 
             } catch (error) {
                 console.error('Błąd dodawania klucza:', error);
                 if (error.name === 'NotAllowedError') {
-                    alert('Anulowano dodawanie klucza bezpieczeństwa');
+                    showToast('Anulowano', 'Dodawanie klucza bezpieczeństwa zostało anulowane', 'info');
                 } else {
-                    alert('Błąd: ' + error.message);
+                    showToast('Błąd', error.message, 'error');
                 }
             }
         }
@@ -864,7 +919,7 @@
                 filterCustomers();
             } catch (error) {
                 console.error('Błąd ładowania klientów:', error);
-                alert('Błąd podczas ładowania klientów');
+                showToast('Błąd', 'Nie udało się załadować listy klientów', 'error');
             }
         }
 
@@ -1065,12 +1120,13 @@
                 if (response.ok) {
                     customerModal.hide();
                     loadCustomers();
+                    showToast('Sukces!', currentCustomerId ? 'Klient został zaktualizowany' : 'Klient został dodany', 'success');
                 } else {
-                    alert('Błąd podczas zapisywania klienta');
+                    showToast('Błąd', 'Nie udało się zapisać klienta', 'error');
                 }
             } catch (error) {
                 console.error('Błąd:', error);
-                alert('Błąd podczas zapisywania klienta');
+                showToast('Błąd', 'Wystąpił problem podczas zapisywania klienta', 'error');
             }
         }
 
@@ -1087,12 +1143,13 @@
                 
                 if (response.ok) {
                     loadCustomers();
+                    showToast('Usunięto', 'Klient został usunięty', 'success');
                 } else {
-                    alert('Błąd podczas usuwania klienta');
+                    showToast('Błąd', 'Nie udało się usunąć klienta', 'error');
                 }
             } catch (error) {
                 console.error('Błąd:', error);
-                alert('Błąd podczas usuwania klienta');
+                showToast('Błąd', 'Wystąpił problem podczas usuwania klienta', 'error');
             }
         }
 
