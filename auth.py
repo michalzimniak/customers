@@ -11,6 +11,18 @@ def hash_password(password):
     """Hashuj hasło"""
     return hashlib.sha256(password.encode()).hexdigest()
 
+def base64url_encode(data):
+    """Koduj do base64url (bez padding, bezpieczne dla URL)"""
+    return base64.urlsafe_b64encode(data).decode('utf-8').rstrip('=')
+
+def base64url_decode(data):
+    """Dekoduj z base64url"""
+    # Dodaj padding jeśli brakuje
+    padding = 4 - (len(data) % 4)
+    if padding != 4:
+        data += '=' * padding
+    return base64.urlsafe_b64decode(data)
+
 def get_user_credentials(user):
     """Pobierz credentials użytkownika z bazy danych"""
     if user.webauthn_credentials:
@@ -110,13 +122,13 @@ def init_auth_routes(app):
         user_id = secrets.token_bytes(16)
         
         # Zapisz tymczasowo
-        session['registration_challenge'] = base64.b64encode(challenge).decode()
+        session['registration_challenge'] = base64url_encode(challenge)
         session['registration_username'] = username
-        session['registration_user_id'] = base64.b64encode(user_id).decode()
+        session['registration_user_id'] = base64url_encode(user_id)
         
         # Utwórz użytkownika w bazie (bez hasła, tylko dla WebAuthn)
         new_user = User(
-            id=base64.b64encode(user_id).decode(),
+            id=base64url_encode(user_id),
             username=username,
             password_hash=None
         )
@@ -125,13 +137,13 @@ def init_auth_routes(app):
         
         # Opcje dla WebAuthn
         options = {
-            'challenge': base64.b64encode(challenge).decode(),
+            'challenge': base64url_encode(challenge),
             'rp': {
                 'name': 'Rejestr Klientów',
                 'id': request.host.split(':')[0]
             },
             'user': {
-                'id': base64.b64encode(user_id).decode(),
+                'id': base64url_encode(user_id),
                 'name': username,
                 'displayName': username
             },
@@ -189,7 +201,7 @@ def init_auth_routes(app):
     def login_start():
         """Rozpocznij logowanie z WebAuthn"""
         challenge = secrets.token_bytes(32)
-        session['login_challenge'] = base64.b64encode(challenge).decode()
+        session['login_challenge'] = base64url_encode(challenge)
         
         # Pobierz wszystkie credentials ze wszystkich użytkowników
         all_credentials = []
@@ -200,7 +212,7 @@ def init_auth_routes(app):
                 all_credentials.append({'type': 'public-key', 'id': cred_id})
         
         options = {
-            'challenge': base64.b64encode(challenge).decode(),
+            'challenge': base64url_encode(challenge),
             'timeout': 60000,
             'rpId': request.host.split(':')[0],
             'allowCredentials': all_credentials,
@@ -248,11 +260,11 @@ def init_auth_routes(app):
         challenge = secrets.token_bytes(32)
         
         # Zapisz tymczasowo
-        session['add_key_challenge'] = base64.b64encode(challenge).decode()
+        session['add_key_challenge'] = base64url_encode(challenge)
         
         # Opcje dla WebAuthn
         options = {
-            'challenge': base64.b64encode(challenge).decode(),
+            'challenge': base64url_encode(challenge),
             'rp': {
                 'name': 'Rejestr Klientów',
                 'id': request.host.split(':')[0]
