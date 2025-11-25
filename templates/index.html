@@ -441,6 +441,9 @@
                 </h1>
                 <div class="d-flex gap-2">
                     <span class="badge bg-secondary align-self-center" id="usernameDisplay"></span>
+                    <button class="btn btn-outline-success btn-sm" onclick="addBiometricKey()" title="Dodaj biometrię" id="addKeyBtn">
+                        <i class="bi bi-fingerprint"></i>
+                    </button>
                     <button class="btn btn-outline-danger btn-sm" onclick="logout()" title="Wyloguj">
                         <i class="bi bi-box-arrow-right"></i>
                     </button>
@@ -722,6 +725,89 @@
                 console.error('Błąd wylogowania:', error);
                 alert('Błąd wylogowania');
             }
+        }
+        
+        // Dodaj klucz biometryczny do konta
+        async function addBiometricKey() {
+            // Sprawdź wsparcie WebAuthn
+            if (!window.PublicKeyCredential) {
+                alert('Twoja przeglądarka nie wspiera kluczy bezpieczeństwa');
+                return;
+            }
+            
+            try {
+                // Rozpocznij proces dodawania klucza
+                const startResponse = await fetch('/auth/add-key/start', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'}
+                });
+                
+                if (!startResponse.ok) {
+                    throw new Error('Nie udało się rozpocząć dodawania klucza');
+                }
+                
+                const options = await startResponse.json();
+                
+                // Konwertuj base64 na ArrayBuffer
+                options.challenge = base64ToArrayBuffer(options.challenge);
+                options.user.id = base64ToArrayBuffer(options.user.id);
+                
+                // Wywołaj WebAuthn
+                const credential = await navigator.credentials.create({
+                    publicKey: options
+                });
+                
+                // Konwertuj odpowiedź
+                const credentialForServer = {
+                    id: credential.id,
+                    rawId: arrayBufferToBase64(credential.rawId),
+                    type: credential.type,
+                    response: {
+                        attestationObject: arrayBufferToBase64(credential.response.attestationObject),
+                        clientDataJSON: arrayBufferToBase64(credential.response.clientDataJSON)
+                    }
+                };
+                
+                // Zakończ proces
+                const finishResponse = await fetch('/auth/add-key/finish', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(credentialForServer)
+                });
+                
+                if (!finishResponse.ok) {
+                    throw new Error('Nie udało się dodać klucza');
+                }
+                
+                alert('✅ Klucz biometryczny dodany pomyślnie!\n\nTeraz możesz logować się za pomocą odcisku palca lub Face ID.');
+                
+            } catch (error) {
+                console.error('Błąd dodawania klucza:', error);
+                if (error.name === 'NotAllowedError') {
+                    alert('Anulowano dodawanie klucza bezpieczeństwa');
+                } else {
+                    alert('Błąd: ' + error.message);
+                }
+            }
+        }
+        
+        // Funkcje pomocnicze dla WebAuthn
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        
+        function arrayBufferToBase64(buffer) {
+            const bytes = new Uint8Array(buffer);
+            let binary = '';
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
         }
         
         // Pokaż banner instalacji

@@ -215,6 +215,75 @@ def init_auth_routes(app):
         
         return jsonify({'success': True, 'username': user.username})
     
+    # ============ Dodawanie klucza do istniejącego konta ============
+    
+    @app.route('/auth/add-key/start', methods=['POST'])
+    @login_required
+    def add_key_start():
+        """Rozpocznij dodawanie klucza biometrycznego do istniejącego konta"""
+        user_id = session.get('user_id')
+        username = session.get('username')
+        
+        if not user_id or not username:
+            return jsonify({'error': 'Not logged in'}), 401
+        
+        # Generuj challenge
+        challenge = secrets.token_bytes(32)
+        
+        # Zapisz tymczasowo
+        session['add_key_challenge'] = base64.b64encode(challenge).decode()
+        
+        # Opcje dla WebAuthn
+        options = {
+            'challenge': base64.b64encode(challenge).decode(),
+            'rp': {
+                'name': 'Rejestr Klientów',
+                'id': request.host.split(':')[0]
+            },
+            'user': {
+                'id': user_id,
+                'name': username,
+                'displayName': username
+            },
+            'pubKeyCredParams': [
+                {'type': 'public-key', 'alg': -7},  # ES256
+                {'type': 'public-key', 'alg': -257}  # RS256
+            ],
+            'authenticatorSelection': {
+                'authenticatorAttachment': 'platform',  # Preferuj biometrię wbudowaną
+                'requireResidentKey': False,
+                'userVerification': 'preferred'
+            },
+            'timeout': 60000,
+            'attestation': 'none'
+        }
+        
+        return jsonify(options)
+    
+    @app.route('/auth/add-key/finish', methods=['POST'])
+    @login_required
+    def add_key_finish():
+        """Zakończ dodawanie klucza biometrycznego"""
+        data = request.get_json()
+        user_id = session.get('user_id')
+        username = session.get('username')
+        
+        if not user_id or not username:
+            return jsonify({'error': 'Not logged in'}), 401
+        
+        # Zapisz credential
+        credential_id = data.get('id')
+        credentials[credential_id] = {
+            'user_id': user_id,
+            'public_key': data.get('response', {}).get('attestationObject'),
+            'counter': 0
+        }
+        
+        # Wyczyść sesję
+        session.pop('add_key_challenge', None)
+        
+        return jsonify({'success': True, 'message': 'Klucz biometryczny dodany pomyślnie'})
+    
     @app.route('/auth/logout', methods=['POST'])
     def logout():
         """Wyloguj użytkownika"""
