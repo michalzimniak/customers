@@ -7,12 +7,22 @@ from datetime import datetime
 import hashlib
 from models import db, User
 
-# Tymczasowe przechowywanie credentials dla WebAuthn
-credentials = {}
-
 def hash_password(password):
     """Hashuj hasło"""
     return hashlib.sha256(password.encode()).hexdigest()
+
+def get_user_credentials(user):
+    """Pobierz credentials użytkownika z bazy danych"""
+    if user.webauthn_credentials:
+        return json.loads(user.webauthn_credentials)
+    return {}
+
+def save_user_credential(user, credential_id, credential_data):
+    """Zapisz credential użytkownika do bazy danych"""
+    credentials = get_user_credentials(user)
+    credentials[credential_id] = credential_data
+    user.webauthn_credentials = json.dumps(credentials)
+    db.session.commit()
 
 def login_required(f):
     @wraps(f)
@@ -150,14 +160,19 @@ def init_auth_routes(app):
         if not username or not user_id:
             return jsonify({'error': 'Registration not started'}), 400
         
-        # Credential został już zapisany podczas register/start
-        # Zapisz credential (w produkcji zweryfikuj attestation)
+        # Pobierz użytkownika z bazy
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 400
+        
+        # Zapisz credential do bazy danych
         credential_id = data.get('id')
-        credentials[credential_id] = {
+        credential_data = {
             'user_id': user_id,
             'public_key': data.get('response', {}).get('attestationObject'),
             'counter': 0
         }
+        save_user_credential(user, credential_id, credential_data)
         
         # Wyczyść sesję rejestracji
         session.pop('registration_challenge', None)
@@ -176,17 +191,19 @@ def init_auth_routes(app):
         challenge = secrets.token_bytes(32)
         session['login_challenge'] = base64.b64encode(challenge).decode()
         
-        # Pobierz listę zarejestrowanych credentials
-        allowed_credentials = [
-            {'type': 'public-key', 'id': cred_id}
-            for cred_id in credentials.keys()
-        ]
+        # Pobierz wszystkie credentials ze wszystkich użytkowników
+        all_credentials = []
+        users = User.query.all()
+        for user in users:
+            user_creds = get_user_credentials(user)
+            for cred_id in user_creds.keys():
+                all_credentials.append({'type': 'public-key', 'id': cred_id})
         
         options = {
             'challenge': base64.b64encode(challenge).decode(),
             'timeout': 60000,
             'rpId': request.host.split(':')[0],
-            'allowCredentials': allowed_credentials,
+            'allowCredentials': all_credentials,
             'userVerification': 'preferred'
         }
         
@@ -198,16 +215,16 @@ def init_auth_routes(app):
         data = request.get_json()
         credential_id = data.get('id')
         
-        if credential_id not in credentials:
-            return jsonify({'error': 'Credential not found'}), 400
-        
-        # Pobierz użytkownika
-        cred = credentials[credential_id]
-        user_id = cred['user_id']
-        user = User.query.filter_by(id=user_id).first()
+        # Wyszukaj credential w bazie danych
+        user = None
+        for u in User.query.all():
+            user_creds = get_user_credentials(u)
+            if credential_id in user_creds:
+                user = u
+                break
         
         if not user:
-            return jsonify({'error': 'User not found'}), 400
+            return jsonify({'error': 'Credential not found'}), 400
         
         # Zaloguj użytkownika
         session['user_id'] = user.id
@@ -271,13 +288,19 @@ def init_auth_routes(app):
         if not user_id or not username:
             return jsonify({'error': 'Not logged in'}), 401
         
-        # Zapisz credential
+        # Pobierz użytkownika z bazy
+        user = User.query.filter_by(id=user_id).first()
+        if not user:
+            return jsonify({'error': 'User not found'}), 400
+        
+        # Zapisz credential do bazy danych
         credential_id = data.get('id')
-        credentials[credential_id] = {
+        credential_data = {
             'user_id': user_id,
             'public_key': data.get('response', {}).get('attestationObject'),
             'counter': 0
         }
+        save_user_credential(user, credential_id, credential_data)
         
         # Wyczyść sesję
         session.pop('add_key_challenge', None)

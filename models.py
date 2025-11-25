@@ -10,6 +10,7 @@ class User(db.Model):
     id = db.Column(db.String(32), primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(64), nullable=True)
+    webauthn_credentials = db.Column(db.Text, nullable=True)  # JSON z credentials
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relacja z klientami
