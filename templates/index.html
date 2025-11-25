@@ -595,6 +595,32 @@
         </div>
     </div>
 
+    <!-- Modal potwierdzenia usunięcia -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Potwierdzenie usunięcia
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-0">Czy na pewno chcesz usunąć klienta <strong id="deleteCustomerName"></strong>?</p>
+                    <p class="text-muted small mb-0 mt-2">Ta operacja jest nieodwracalna.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Anuluj
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="bi bi-trash me-1"></i>Usuń
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal szczegółów klienta -->
     <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
@@ -666,6 +692,8 @@
         let currentCustomerId = null;
         let customerModal;
         let detailsModal;
+        let deleteModal;
+        let customerToDelete = null;
 
         // Funkcja do wyświetlania toastów Bootstrap
         function showToast(title, message, type = 'info') {
@@ -723,6 +751,10 @@
         document.addEventListener('DOMContentLoaded', function() {
             customerModal = new bootstrap.Modal(document.getElementById('customerModal'));
             detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+            
+            // Event listener dla przycisku potwierdzenia usunięcia
+            document.getElementById('confirmDeleteBtn').addEventListener('click', deleteCustomer);
             
             // Sprawdź status autentykacji
             checkAuthStatus();
@@ -995,7 +1027,7 @@
                             <i class="bi bi-pencil"></i>
                         </button>
                         <button class="btn btn-sm btn-outline-danger" 
-                                onclick="event.stopPropagation(); deleteCustomer(${customer.id})"
+                                onclick="event.stopPropagation(); showDeleteConfirmation(${customer.id}, '${customer.imie} ${customer.nazwisko}')"
                                 title="Usuń">
                             <i class="bi bi-trash"></i>
                         </button>
@@ -1130,18 +1162,27 @@
             }
         }
 
-        // Usuń klienta
-        async function deleteCustomer(customerId) {
-            if (!confirm('Czy na pewno chcesz usunąć tego klienta?')) {
-                return;
-            }
+        // Pokaż modal potwierdzenia usunięcia
+        function showDeleteConfirmation(customerId, customerName) {
+            customerToDelete = customerId;
+            document.getElementById('deleteCustomerName').textContent = customerName;
+            deleteModal.show();
+        }
+
+        // Usuń klienta po potwierdzeniu
+        async function deleteCustomer() {
+            if (!customerToDelete) return;
             
             try {
-                const response = await fetch(`/api/customers/${customerId}`, {
+                const response = await fetch(`/api/customers/${customerToDelete}`, {
                     method: 'DELETE'
                 });
                 
                 if (response.ok) {
+                    deleteModal.hide();
+                    if (detailsModal._isShown) {
+                        detailsModal.hide();
+                    }
                     loadCustomers();
                     showToast('Usunięto', 'Klient został usunięty', 'success');
                 } else {
@@ -1150,13 +1191,17 @@
             } catch (error) {
                 console.error('Błąd:', error);
                 showToast('Błąd', 'Wystąpił problem podczas usuwania klienta', 'error');
+            } finally {
+                customerToDelete = null;
             }
         }
 
         // Usuń z okna szczegółów
         function deleteCustomerConfirm() {
-            detailsModal.hide();
-            setTimeout(() => deleteCustomer(currentCustomerId), 300);
+            const customer = customers.find(c => c.id === currentCustomerId);
+            if (customer) {
+                showDeleteConfirmation(currentCustomerId, `${customer.imie} ${customer.nazwisko}`);
+            }
         }
         
         // Otwórz nawigację do adresu klienta
