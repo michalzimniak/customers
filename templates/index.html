@@ -416,6 +416,19 @@
         #installBanner .close-banner:hover {
             opacity: 1;
         }
+        
+        /* Modal usunięcia powinien być nad innymi modalami */
+        #deleteModal {
+            z-index: 1060 !important;
+        }
+        
+        #deleteModal ~ .modal-backdrop {
+            z-index: 1055 !important;
+        }
+        
+        .modal-backdrop.show:nth-of-type(2) {
+            z-index: 1055 !important;
+        }
     </style>
 </head>
 <body>
@@ -596,7 +609,7 @@
     </div>
 
     <!-- Modal potwierdzenia usunięcia -->
-    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true" style="z-index: 1060;">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header bg-danger text-white">
@@ -1167,6 +1180,14 @@
             customerToDelete = customerId;
             document.getElementById('deleteCustomerName').textContent = customerName;
             deleteModal.show();
+            
+            // Ustaw z-index dla backdrop modala usunięcia
+            setTimeout(() => {
+                const backdrops = document.querySelectorAll('.modal-backdrop');
+                if (backdrops.length > 1) {
+                    backdrops[backdrops.length - 1].style.zIndex = '1055';
+                }
+            }, 10);
         }
 
         // Usuń klienta po potwierdzeniu
