@@ -35,14 +35,16 @@ POLISH_CITIES = [
 @api_bp.route('/customers', methods=['GET'])
 @login_required
 def get_customers():
-    customers = Customer.query.order_by(Customer.nazwisko, Customer.imie).all()
+    user_id = session.get('user_id')
+    customers = Customer.query.filter_by(user_id=user_id).order_by(Customer.nazwisko, Customer.imie).all()
     return jsonify([customer.to_dict() for customer in customers])
 
 # API - Szczegóły klienta
 @api_bp.route('/customers/<int:customer_id>', methods=['GET'])
 @login_required
 def get_customer(customer_id):
-    customer = Customer.query.get_or_404(customer_id)
+    user_id = session.get('user_id')
+    customer = Customer.query.filter_by(id=customer_id, user_id=user_id).first_or_404()
     return jsonify(customer.to_dict())
 
 # API - Dodanie nowego klienta
@@ -50,8 +52,10 @@ def get_customer(customer_id):
 @login_required
 def add_customer():
     data = request.get_json()
+    user_id = session.get('user_id')
     
     new_customer = Customer(
+        user_id=user_id,
         imie=data.get('imie'),
         nazwisko=data.get('nazwisko'),
         miejscowosc=data.get('miejscowosc'),
@@ -70,7 +74,8 @@ def add_customer():
 @api_bp.route('/customers/<int:customer_id>', methods=['PUT'])
 @login_required
 def update_customer(customer_id):
-    customer = Customer.query.get_or_404(customer_id)
+    user_id = session.get('user_id')
+    customer = Customer.query.filter_by(id=customer_id, user_id=user_id).first_or_404()
     data = request.get_json()
     
     customer.imie = data.get('imie', customer.imie)
@@ -89,7 +94,8 @@ def update_customer(customer_id):
 @api_bp.route('/customers/<int:customer_id>', methods=['DELETE'])
 @login_required
 def delete_customer(customer_id):
-    customer = Customer.query.get_or_404(customer_id)
+    user_id = session.get('user_id')
+    customer = Customer.query.filter_by(id=customer_id, user_id=user_id).first_or_404()
     db.session.delete(customer)
     db.session.commit()
     

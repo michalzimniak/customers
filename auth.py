@@ -5,11 +5,10 @@ import base64
 import json
 from datetime import datetime
 import hashlib
+from models import db, User
 
-# Tymczasowe przechowywanie użytkowników (w produkcji użyj bazy danych)
-users = {}
+# Tymczasowe przechowywanie credentials dla WebAuthn
 credentials = {}
-password_users = {}  # Dla tradycyjnego logowania
 
 def hash_password(password):
     """Hashuj hasło"""
@@ -39,16 +38,20 @@ def init_auth_routes(app):
             return jsonify({'error': 'Username and password required'}), 400
         
         # Sprawdź czy użytkownik już istnieje
-        if username in password_users:
+        existing_user = User.query.filter_by(username=username).first()
+        if existing_user:
             return jsonify({'error': 'Username already exists'}), 400
         
-        # Zapisz użytkownika
+        # Utwórz nowego użytkownika
         user_id = secrets.token_hex(16)
-        password_users[username] = {
-            'user_id': user_id,
-            'password_hash': hash_password(password),
-            'created_at': datetime.now().isoformat()
-        }
+        new_user = User(
+            id=user_id,
+            username=username,
+            password_hash=hash_password(password)
+        )
+        
+        db.session.add(new_user)
+        db.session.commit()
         
         # Zaloguj użytkownika
         session['user_id'] = user_id
@@ -67,19 +70,19 @@ def init_auth_routes(app):
             return jsonify({'error': 'Username and password required'}), 400
         
         # Sprawdź użytkownika
-        user_data = password_users.get(username)
-        if not user_data:
+        user = User.query.filter_by(username=username).first()
+        if not user or not user.password_hash:
             return jsonify({'error': 'Invalid credentials'}), 401
         
         # Sprawdź hasło
-        if user_data['password_hash'] != hash_password(password):
+        if user.password_hash != hash_password(password):
             return jsonify({'error': 'Invalid credentials'}), 401
         
         # Zaloguj użytkownika
-        session['user_id'] = user_data['user_id']
-        session['username'] = username
+        session['user_id'] = user.id
+        session['username'] = user.username
         
-        return jsonify({'success': True, 'username': username})
+        return jsonify({'success': True, 'username': user.username})
     
     # ============ WebAuthn (biometria) ============
     
@@ -100,6 +103,15 @@ def init_auth_routes(app):
         session['registration_challenge'] = base64.b64encode(challenge).decode()
         session['registration_username'] = username
         session['registration_user_id'] = base64.b64encode(user_id).decode()
+        
+        # Utwórz użytkownika w bazie (bez hasła, tylko dla WebAuthn)
+        new_user = User(
+            id=base64.b64encode(user_id).decode(),
+            username=username,
+            password_hash=None
+        )
+        db.session.add(new_user)
+        db.session.commit()
         
         # Opcje dla WebAuthn
         options = {
@@ -138,12 +150,7 @@ def init_auth_routes(app):
         if not username or not user_id:
             return jsonify({'error': 'Registration not started'}), 400
         
-        # Zapisz użytkownika i credential
-        users[user_id] = {
-            'username': username,
-            'created_at': datetime.now().isoformat()
-        }
-        
+        # Credential został już zapisany podczas register/start
         # Zapisz credential (w produkcji zweryfikuj attestation)
         credential_id = data.get('id')
         credentials[credential_id] = {
@@ -197,16 +204,16 @@ def init_auth_routes(app):
         # Pobierz użytkownika
         cred = credentials[credential_id]
         user_id = cred['user_id']
-        user = users.get(user_id)
+        user = User.query.filter_by(id=user_id).first()
         
         if not user:
             return jsonify({'error': 'User not found'}), 400
         
         # Zaloguj użytkownika
-        session['user_id'] = user_id
-        session['username'] = user['username']
+        session['user_id'] = user.id
+        session['username'] = user.username
         
-        return jsonify({'success': True, 'username': user['username']})
+        return jsonify({'success': True, 'username': user.username})
     
     @app.route('/auth/logout', methods=['POST'])
     def logout():
@@ -218,8 +225,10 @@ def init_auth_routes(app):
     def auth_status():
         """Sprawdź status autentykacji"""
         if 'user_id' in session:
-            return jsonify({
-                'authenticated': True,
-                'username': session.get('username')
-            })
+            user = User.query.filter_by(id=session.get('user_id')).first()
+            if user:
+                return jsonify({
+                    'authenticated': True,
+                    'username': user.username
+                })
         return jsonify({'authenticated': False})

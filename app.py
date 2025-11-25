@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 from config import Config
-from models import db, Customer
+from models import db, Customer, User
 from routes import api_bp
 from auth import init_auth_routes
 
