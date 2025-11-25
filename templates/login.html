@@ -98,10 +98,13 @@
                         <!-- WebAuthn wspierane -->
                         <div id="webauthn-supported">
                             <div class="text-center">
-                                <i class="bi bi-fingerprint biometric-icon"></i>
-                                <p>Użyj odcisku palca lub Face ID</p>
+                                <i class="bi bi-shield-lock-fill biometric-icon"></i>
+                                <p>Zaloguj się za pomocą klucza bezpieczeństwa</p>
+                                <small class="text-muted d-block mb-3">
+                                    Odcisk palca, Face ID, PIN lub klucz sprzętowy
+                                </small>
                                 <button class="btn btn-primary btn-lg w-100" onclick="loginWithBiometric()">
-                                    <i class="bi bi-shield-lock"></i> Zaloguj się biometrycznie
+                                    <i class="bi bi-shield-lock"></i> Użyj klucza bezpieczeństwa
                                 </button>
                             </div>
                             <div class="text-center mt-3">
@@ -116,7 +119,7 @@
                         <div id="webauthn-not-supported" style="display: none;">
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle"></i> 
-                                Twoja przeglądarka nie wspiera biometrii. Użyj hasła do logowania.
+                                Twoja przeglądarka nie wspiera kluczy bezpieczeństwa. Użyj hasła do logowania.
                             </div>
                             <form id="passwordLoginForm">
                                 <div class="mb-3">
@@ -160,6 +163,10 @@
                     
                     <!-- Rejestracja -->
                     <div class="tab-pane fade" id="register" role="tabpanel">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Uwaga:</strong> Rejestracja z hasłem. Po zalogowaniu możesz skonfigurować klucz bezpieczeństwa (opcjonalnie).
+                        </div>
                         <form id="registerForm">
                             <div class="mb-3">
                                 <label for="username" class="form-label">Nazwa użytkownika</label>
@@ -188,7 +195,7 @@
                 <div class="text-center mt-4">
                     <small class="text-muted">
                         <i class="bi bi-shield-check"></i> 
-                        Bezpieczna autentykacja - biometria lub hasło
+                        Bezpieczna autentykacja
                     </small>
                 </div>
             </div>
@@ -400,7 +407,7 @@
             } catch (error) {
                 console.error('Błąd logowania:', error);
                 errorDiv.textContent = 'Błąd logowania: ' + error.message + 
-                    '. Jeśli nie masz konta, zarejestruj się w zakładce "Rejestracja" lub użyj hasła.';
+                    '. Jeśli nie masz zarejestrowanego klucza bezpieczeństwa, użyj hasła lub zarejestruj się ponownie.';
                 errorDiv.style.display = 'block';
             }
         }
